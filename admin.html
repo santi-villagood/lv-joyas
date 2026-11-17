@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Administrar · Joyas de Plata</title>
+<meta name="theme-color" content="#2b3a67">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="admin">
+
+<div class="topbar"><a href="app.html">← Inicio</a><h1>Administrar</h1></div>
+
+<main>
+  <!-- Falta configurar Supabase -->
+  <section class="panel hide" id="sinConfig">
+    <h2>Falta conectar Supabase</h2>
+    <p class="msg">Abrí config.js y completá SUPABASE_URL y SUPABASE_KEY.</p>
+  </section>
+
+  <!-- Ingreso -->
+  <section class="panel hide" id="login">
+    <h2>Ingresar</h2>
+    <input class="field" id="em" type="email" placeholder="Email" autocomplete="username">
+    <input class="field" id="pw" type="password" placeholder="Contraseña" autocomplete="current-password">
+    <button class="btn" id="btnLogin">Ingresar</button>
+    <p class="msg" id="loginMsg"></p>
+  </section>
+
+  <!-- Panel -->
+  <div id="panel" class="hide">
+    <section class="panel">
+      <h2>Subir una joya</h2>
+      <input class="field" id="n" placeholder="Nombre (ej. Anillo corazón)">
+      <input class="field" id="pr" type="number" min="0" inputmode="numeric" placeholder="Precio">
+      <select class="field" id="ca" aria-label="Categoría"></select>
+
+      <label class="btn sec" for="ft" style="cursor:pointer">Elegir foto</label>
+      <input id="ft" type="file" accept="image/*" class="hide">
+
+      <div id="editor" class="hide">
+        <div class="crop"><canvas id="cv" width="640" height="640" aria-label="Vista previa de la foto"></canvas></div>
+        <p class="msg" style="text-align:center;margin-top:6px">Arrastrá la foto para encuadrarla. Lo que ves es lo que se publica.</p>
+        <div class="tools" style="margin-top:8px">
+          <button class="btn sec" id="rotL" type="button">⟲ Girar</button>
+          <button class="btn sec" id="rotR" type="button">Girar ⟳</button>
+          <button class="btn sec" id="reset" type="button">Reiniciar</button>
+        </div>
+        <label class="lbl" style="margin-top:8px">Zoom<input id="zoom" type="range" min="1" max="4" step="0.01" value="1"></label>
+        <label class="lbl">Enderezar<input id="fine" type="range" min="-45" max="45" step="0.5" value="0"></label>
+      </div>
+
+      <button class="btn" id="subir">Publicar</button>
+      <p class="msg" id="am"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Mis productos</h2>
+      <div id="lista"></div>
+    </section>
+
+    <button class="btn sec" id="logout">Cerrar sesión</button>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+const { SUPABASE_URL, SUPABASE_KEY, CATEGORIAS } = window.CONFIG;
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("service-worker.js");
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money = n => "$" + Number(n).toLocaleString("es-AR");
+const sb = (SUPABASE_URL && SUPABASE_KEY) ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+function msg(id, texto, cls) { const m = $(id); m.textContent = texto; m.className = "msg " + (cls || ""); }
+function mostrar(seccion) {
+  ["#sinConfig", "#login", "#panel"].forEach(s => $(s).classList.toggle("hide", s !== seccion));
+}
+
+/* ======================= EDITOR DE FOTO (recortar + girar) ======================= */
+const V = 640;                       // tamaño interno del recuadro (cuadrado, igual que en la tienda)
+const cv = $("#cv"), cx = cv.getContext("2d");
+const S = { img: null, cuartos: 0, fino: 0, zoom: 1, ox: 0, oy: 0 };
+
+function pintar(c, size) {
+  const k = size / V;
+  c.fillStyle = "#fff"; c.fillRect(0, 0, size, size);
+  if (!S.img) return;
+  const iw = S.img.naturalWidth, ih = S.img.naturalHeight;
+  const impar = S.cuartos % 2 !== 0;
+  const w = impar ? ih : iw, h = impar ? iw : ih;
+  const base = Math.max(V / w, V / h);          // la foto siempre cubre el recuadro
+  c.save();
+  c.translate(size / 2 + S.ox * k, size / 2 + S.oy * k);
+  c.rotate((S.cuartos * 90 + S.fino) * Math.PI / 180);
+  c.scale(base * S.zoom * k, base * S.zoom * k);
+  c.drawImage(S.img, -iw / 2, -ih / 2);
+  c.restore();
+}
+const redibujar = () => pintar(cx, V);
+
+function reiniciar() {
+  Object.assign(S, { cuartos: 0, fino: 0, zoom: 1, ox: 0, oy: 0 });
+  $("#zoom").value = 1; $("#fine").value = 0; redibujar();
+}
+
+$("#ft").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = new Image();
+  img.onload = () => { S.img = img; reiniciar(); $("#editor").classList.remove("hide"); };
+  img.onerror = () => msg("#am", "No se pudo abrir esa imagen.", "err");
+  img.src = URL.createObjectURL(f);
+});
+
+$("#rotL").onclick = () => { S.cuartos--; redibujar(); };
+$("#rotR").onclick = () => { S.cuartos++; redibujar(); };
+$("#reset").onclick = reiniciar;
+$("#zoom").oninput = e => { S.zoom = +e.target.value; redibujar(); };
+$("#fine").oninput = e => { S.fino = +e.target.value; redibujar(); };
+
+// Arrastrar con el dedo o el mouse
+let arrastre = null;
+cv.addEventListener("pointerdown", e => { cv.setPointerCapture(e.pointerId); arrastre = { x: e.clientX, y: e.clientY }; });
+cv.addEventListener("pointermove", e => {
+  if (!arrastre) return;
+  const f = V / cv.getBoundingClientRect().width;
+  S.ox += (e.clientX - arrastre.x) * f; S.oy += (e.clientY - arrastre.y) * f;
+  arrastre = { x: e.clientX, y: e.clientY }; redibujar();
+});
+["pointerup", "pointercancel"].forEach(ev => cv.addEventListener(ev, () => arrastre = null));
+cv.addEventListener("wheel", e => {
+  e.preventDefault();
+  S.zoom = Math.min(4, Math.max(1, S.zoom - e.deltaY * 0.002)); $("#zoom").value = S.zoom; redibujar();
+}, { passive: false });
+
+/* ======================= SESIÓN Y PRODUCTOS ======================= */
+async function listar() {
+  const { data, error } = await sb.from("productos").select("*").order("created_at", { ascending: false });
+  if (error) { $("#lista").innerHTML = `<p class="msg err">No se pudieron cargar los productos.</p>`; return; }
+  $("#lista").innerHTML = data.length ? data.map(p => `
+    <div class="item" style="margin-bottom:10px">
+      <div class="ph">${p.imagen_url ? `<img src="${esc(p.imagen_url)}" alt="">` : ""}</div>
+      <div class="grow"><div class="name">${esc(p.nombre)}</div><div class="msg">${money(p.precio)} · ${esc(p.categoria)}</div></div>
+      <button class="btn del" data-del="${esc(p.id)}" data-img="${esc(p.imagen_url || "")}">Borrar</button>
+    </div>`).join("") : `<p class="msg">Todavía no subiste nada.</p>`;
+}
+
+async function entrar() {
+  mostrar("#panel");
+  $("#ca").innerHTML = CATEGORIAS.filter(c => c !== "Todo").map(c => `<option>${esc(c)}</option>`).join("");
+  await listar();
+}
+
+$("#btnLogin").onclick = async () => {
+  const { error } = await sb.auth.signInWithPassword({ email: $("#em").value.trim(), password: $("#pw").value });
+  if (error) return msg("#loginMsg", "Email o contraseña incorrectos.", "err");
+  entrar();
+};
+$("#logout").onclick = async () => { await sb.auth.signOut(); mostrar("#login"); };
+
+$("#subir").onclick = async () => {
+  const nombre = $("#n").value.trim(), precio = Number($("#pr").value);
+  if (!nombre || !precio || !S.img) return msg("#am", "Completá nombre, precio y foto.", "err");
+  const b = $("#subir"); b.disabled = true; msg("#am", "Subiendo…");
+
+  const out = document.createElement("canvas"); out.width = out.height = 1000;   // 1000×1000 px
+  pintar(out.getContext("2d"), 1000);
+  const blob = await new Promise(r => out.toBlob(r, "image/jpeg", 0.85));
+
+  const ruta = `${Date.now()}.jpg`;
+  const up = await sb.storage.from("joyas").upload(ruta, blob, { contentType: "image/jpeg" });
+  if (up.error) { b.disabled = false; return msg("#am", "No se pudo subir la foto: " + up.error.message, "err"); }
+  const url = sb.storage.from("joyas").getPublicUrl(ruta).data.publicUrl;
+
+  const ins = await sb.from("productos").insert({ nombre, precio, categoria: $("#ca").value, imagen_url: url });
+  b.disabled = false;
+  if (ins.error) return msg("#am", "No se pudo guardar: " + ins.error.message, "err");
+
+  $("#n").value = ""; $("#pr").value = ""; $("#ft").value = ""; S.img = null;
+  $("#editor").classList.add("hide"); redibujar();
+  msg("#am", "Publicado.", "ok"); listar();
+};
+
+$("#lista").addEventListener("click", async e => {
+  const t = e.target.closest("[data-del]"); if (!t) return;
+  if (!confirm("¿Borrar este producto?")) return;
+  await sb.from("productos").delete().eq("id", t.dataset.del);
+  const ruta = t.dataset.img.split("/joyas/")[1];
+  if (ruta) await sb.storage.from("joyas").remove([ruta]);
+  listar();
+});
+
+(async () => {
+  if (!sb) return mostrar("#sinConfig");
+  const { data } = await sb.auth.getSession();
+  data.session ? entrar() : mostrar("#login");
+})();
+</script>
+</body>
+</html>

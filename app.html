@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Joyas de Plata</title>
+<meta name="theme-color" content="#2b3a67">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="landing">
+<div class="landing-box">
+  <div class="logo" id="logo">LOGO</div>
+  <h1 id="nombre">Joyas de Plata</h1>
+  <a class="btn sec" href="admin.html">Administrar</a>
+  <a class="btn" href="index.html">Entrar al negocio</a>
+  <button class="linkbtn hide" id="instalar">Instalar la app en este dispositivo</button>
+  <p class="msg hide" id="ios">En iPhone: tocá Compartir y después “Agregar a inicio”.</p>
+</div>
+
+<script src="config.js"></script>
+<script>
+const C = window.CONFIG;
+document.title = C.NOMBRE;
+document.getElementById("nombre").textContent = C.NOMBRE;
+if (C.LOGO_URL) {
+  const img = new Image(); img.alt = "Logo"; img.src = C.LOGO_URL;
+  document.getElementById("logo").replaceChildren(img);
+}
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("service-worker.js");
+
+// Botón de instalación (Chrome / Android / escritorio)
+let evento = null;
+const btn = document.getElementById("instalar");
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); evento = e; btn.classList.remove("hide"); });
+btn.addEventListener("click", async () => {
+  if (!evento) return;
+  evento.prompt(); await evento.userChoice; evento = null; btn.classList.add("hide");
+});
+window.addEventListener("appinstalled", () => btn.classList.add("hide"));
+
+// Aviso para iPhone (Safari no tiene el botón automático)
+const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const instalada = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+if (esIOS && !instalada) document.getElementById("ios").classList.remove("hide");
+</script>
+</body>
+</html>
