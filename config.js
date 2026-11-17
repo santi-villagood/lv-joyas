@@ -11,7 +11,7 @@ window.CONFIG = {
   SUPABASE_KEY: "sb_publishable_57KvMYj0k-173O7sTZP_Uw__MyA5Ja7",                  // clave "anon public" (es segura de dejar acá)
 
   // Número para recibir pedidos: código de país + área + número, sin + ni espacios
-  WHATSAPP: "+54 9 3547 46-6400",                      // ej. "5493515551234"
+  WHATSAPP: "5493547466400",                      // ej. "5493515551234"
 
   // La primera tiene que ser "Todo". Las demás las podés cambiar.
   CATEGORIAS: ["Todo", "Anillos", "Collares", "Aros", "Pulseras", "Dijes", "Conjuntos"]
