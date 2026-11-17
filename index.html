@@ -5,14 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Joyas de Plata</title>
 <meta name="theme-color" content="#2b3a67">
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="app/icons/icon-192.png">
+<link rel="apple-touch-icon" href="app/icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+<div id="splash"><div class="logo" id="slogo">LV</div><h1>LV Joyas</h1></div>
+<script>try{if(sessionStorage.getItem("visto"))document.getElementById("splash").remove()}catch(e){}</script>
 
 <header id="top">
   <div class="row">
@@ -35,7 +37,11 @@
 <script>
 const { SUPABASE_URL, SUPABASE_KEY, WHATSAPP, CATEGORIAS, LOGO_URL, NOMBRE } = window.CONFIG;
 document.title = NOMBRE;
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("service-worker.js");
+// Limpia el service worker viejo de la raíz (la app ahora vive en /app/)
+if ("serviceWorker" in navigator) {
+  const raiz = new URL("./", location.href).href;
+  navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => { if (r.scope === raiz) r.unregister(); }));
+}
 
 const sb = (SUPABASE_URL && SUPABASE_KEY) ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 const $ = s => document.querySelector(s);
@@ -94,9 +100,7 @@ function vistaCarrito() {
 
 function vistaMas() {
   $("#view").innerHTML = `<div class="panel"><h2>Contacto</h2><p class="msg">Consultas y pedidos por WhatsApp.</p>
-    ${WHATSAPP ? `<a class="btn" href="https://wa.me/${esc(WHATSAPP)}">Escribinos</a>` : `<p class="msg">Falta cargar el número en config.js.</p>`}</div>
-    <div class="panel"><h2>Para el dueño</h2><a class="btn sec" href="admin.html">Administrar productos</a></div>
-    <a class="btn sec" href="app.html">Volver al inicio de la app</a>`;
+    ${WHATSAPP ? `<a class="btn" href="https://wa.me/${esc(WHATSAPP)}">Escribinos</a>` : `<p class="msg">Falta cargar el número en config.js.</p>`}</div>`;
 }
 
 function render() {
@@ -134,7 +138,16 @@ document.addEventListener("click", e => {
 $("#q").addEventListener("input", () => { vista = "inicio"; render(); });
 
 (async () => {
-  if (LOGO_URL) { const i = new Image(); i.alt = "Logo"; i.src = LOGO_URL; $("#logo").replaceChildren(i); }
+  if (LOGO_URL) {
+    for (const id of ["#logo", "#slogo"]) {
+      const i = new Image(); i.alt = "Logo"; i.onload = () => $(id).replaceChildren(i.cloneNode()); i.src = LOGO_URL;
+    }
+  }
+  setTimeout(() => {
+    const s = $("#splash"); if (!s) return;
+    s.classList.add("out"); setTimeout(() => s.remove(), 600);
+    try { sessionStorage.setItem("visto", "1"); } catch(e) {}
+  }, 1500);
   await cargar(); render();
 })();
 </script>

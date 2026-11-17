@@ -2,10 +2,10 @@
    Estrategia: primero la red (así siempre ves la versión nueva) y, si no hay
    internet, usa lo último que quedó guardado. Subí el número de VERSION cuando
    agregues archivos nuevos a la lista. */
-const VERSION = "joyas-v1";
+const VERSION = "lvjoyas-app-v1";
 const ARCHIVOS = [
-  "./", "app.html", "index.html", "admin.html",
-  "style.css", "config.js", "manifest.json",
+  "./", "app.html", "admin.html", "manifest.json",
+  "../style.css", "../config.js",
   "icons/icon-192.png", "icons/icon-512.png"
 ];
 

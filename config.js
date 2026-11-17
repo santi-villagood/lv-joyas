@@ -1,17 +1,21 @@
 /* ============================================================
-   CONFIGURACIÓN DE LA TIENDA
+   CONFIGURACIÓN DE LA TIENDA · LV Joyas
    Es el único archivo que tenés que editar para personalizarla.
    ============================================================ */
 window.CONFIG = {
-  NOMBRE: "LV Joyas",          // nombre que aparece en la app
-  LOGO_URL: "",                      // opcional: ej. "logo.png" (subilo al repositorio)
+  NOMBRE: "LV Joyas",
+  LOGO_URL: "logo.png",              // subí tu logo al repositorio con este nombre (junto a index.html)
 
   // Supabase → Project Settings → API
-  SUPABASE_URL: "https://tslgcluymwwnxlvpssby.supabase.co",                  // ej. "https://abcdxyz.supabase.co"
-  SUPABASE_KEY: "sb_publishable_57KvMYj0k-173O7sTZP_Uw__MyA5Ja7",                  // clave "anon public" (es segura de dejar acá)
+  SUPABASE_URL: "",                  // ej. "https://abcdxyz.supabase.co"
+  SUPABASE_KEY: "",                  // clave "anon public" (es segura de dejar acá)
 
   // Número para recibir pedidos: código de país + área + número, sin + ni espacios
-  WHATSAPP: "5493547466400",                      // ej. "5493515551234"
+  WHATSAPP: "",                      // ej. "5493515551234"
+
+  // Link del negocio que abre el botón "Entrar al negocio" de la app.
+  // Dejalo vacío para usar la tienda de este mismo sitio, o poné el link completo.
+  NEGOCIO_URL: "",                   // ej. "https://tuusuario.github.io/lvjoyas/"
 
   // La primera tiene que ser "Todo". Las demás las podés cambiar.
   CATEGORIAS: ["Todo", "Anillos", "Collares", "Aros", "Pulseras", "Dijes", "Conjuntos"]

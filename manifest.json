@@ -1,13 +1,13 @@
 {
-  "name": "Joyas de Plata",
-  "short_name": "Joyas",
-  "description": "Tienda de joyas de plata",
+  "name": "LV Joyas",
+  "short_name": "LV Joyas",
+  "description": "LV Joyas · administración",
   "start_url": "./app.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "lang": "es",
-  "background_color": "#dde1e8",
+  "background_color": "#ffffff",
   "theme_color": "#2b3a67",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },

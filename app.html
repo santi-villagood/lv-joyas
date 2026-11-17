@@ -3,33 +3,36 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Joyas de Plata</title>
+<title>LV Joyas</title>
 <meta name="theme-color" content="#2b3a67">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../style.css">
 </head>
 <body class="landing">
 <div class="landing-box">
   <div class="logo" id="logo">LOGO</div>
-  <h1 id="nombre">Joyas de Plata</h1>
+  <h1 id="nombre">LV Joyas</h1>
   <a class="btn sec" href="admin.html">Administrar</a>
-  <a class="btn" href="index.html">Entrar al negocio</a>
+  <a class="btn" id="negocio" href="../index.html">Entrar al negocio</a>
   <button class="linkbtn hide" id="instalar">Instalar la app en este dispositivo</button>
   <p class="msg hide" id="ios">En iPhone: tocá Compartir y después “Agregar a inicio”.</p>
 </div>
 
-<script src="config.js"></script>
+<script src="../config.js"></script>
 <script>
 const C = window.CONFIG;
 document.title = C.NOMBRE;
 document.getElementById("nombre").textContent = C.NOMBRE;
+if (C.NEGOCIO_URL) document.getElementById("negocio").href = C.NEGOCIO_URL;
 if (C.LOGO_URL) {
-  const img = new Image(); img.alt = "Logo"; img.src = C.LOGO_URL;
-  document.getElementById("logo").replaceChildren(img);
+  const src = /^(https?:|\/)/.test(C.LOGO_URL) ? C.LOGO_URL : "../" + C.LOGO_URL;
+  const img = new Image(); img.alt = "Logo";
+  img.onload = () => document.getElementById("logo").replaceChildren(img);
+  img.src = src;
 }
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("service-worker.js");
