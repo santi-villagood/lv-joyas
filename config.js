@@ -17,6 +17,4 @@ window.CONFIG = {
   // Dejalo vacío para usar la tienda de este mismo sitio, o poné el link completo.
   NEGOCIO_URL: "https://santi-villagood.github.io/lv-joyas/index.html",                   // ej. "https://tuusuario.github.io/lvjoyas/"
 
-  // La primera tiene que ser "Todo". Las demás las podés cambiar.
-  CATEGORIAS: ["Todo", "Anillos", "Collares", "Aros", "Pulseras", "Dijes", "Conjuntos"]
 };
