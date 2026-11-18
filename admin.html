@@ -38,7 +38,8 @@
       <h2>Subir una joya</h2>
       <input class="field" id="n" placeholder="Nombre (ej. Anillo corazón)">
       <input class="field" id="pr" type="number" min="0" inputmode="numeric" placeholder="Precio">
-      <select class="field" id="ca" aria-label="Categoría"></select>
+      <input class="field" id="ca" list="cats" placeholder="Categoría (ej. Anillos)" autocomplete="off">
+      <datalist id="cats"></datalist>
 
       <label class="btn sec" for="ft" style="cursor:pointer">Elegir foto</label>
       <input id="ft" type="file" accept="image/*" class="hide">
@@ -71,7 +72,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="../config.js"></script>
 <script>
-const { SUPABASE_URL, SUPABASE_KEY, CATEGORIAS } = window.CONFIG;
+const { SUPABASE_URL, SUPABASE_KEY } = window.CONFIG;
+let categorias = [];   // categorías que ya existen (salen de los productos)
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("service-worker.js");
 
 const $ = s => document.querySelector(s);
@@ -144,6 +146,8 @@ cv.addEventListener("wheel", e => {
 async function listar() {
   const { data, error } = await sb.from("productos").select("*").order("created_at", { ascending: false });
   if (error) { $("#lista").innerHTML = `<p class="msg err">No se pudieron cargar los productos.</p>`; return; }
+  categorias = [...new Set(data.map(p => p.categoria).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
+  $("#cats").innerHTML = categorias.map(c => `<option value="${esc(c)}">`).join("");
   $("#lista").innerHTML = data.length ? data.map(p => `
     <div class="item" style="margin-bottom:10px">
       <div class="ph">${p.imagen_url ? `<img src="${esc(p.imagen_url)}" alt="">` : ""}</div>
@@ -154,7 +158,6 @@ async function listar() {
 
 async function entrar() {
   mostrar("#panel");
-  $("#ca").innerHTML = CATEGORIAS.filter(c => c !== "Todo").map(c => `<option>${esc(c)}</option>`).join("");
   await listar();
 }
 
@@ -168,6 +171,12 @@ $("#logout").onclick = async () => { await sb.auth.signOut(); mostrar("#login");
 $("#subir").onclick = async () => {
   const nombre = $("#n").value.trim(), precio = Number($("#pr").value);
   if (!nombre || !precio || !S.img) return msg("#am", "Completá nombre, precio y foto.", "err");
+  // Categoría: se crea sola si es nueva; si ya existe (aunque cambie mayúsculas) se reutiliza
+  let categoria = $("#ca").value.trim();
+  if (!categoria || categoria.toLowerCase() === "todo") categoria = "Otros";
+  const igual = categorias.find(c => c.toLowerCase() === categoria.toLowerCase());
+  categoria = igual || categoria[0].toUpperCase() + categoria.slice(1);
+
   const b = $("#subir"); b.disabled = true; msg("#am", "Subiendo…");
 
   const out = document.createElement("canvas"); out.width = out.height = 1000;   // 1000×1000 px
@@ -179,11 +188,11 @@ $("#subir").onclick = async () => {
   if (up.error) { b.disabled = false; return msg("#am", "No se pudo subir la foto: " + up.error.message, "err"); }
   const url = sb.storage.from("joyas").getPublicUrl(ruta).data.publicUrl;
 
-  const ins = await sb.from("productos").insert({ nombre, precio, categoria: $("#ca").value, imagen_url: url });
+  const ins = await sb.from("productos").insert({ nombre, precio, categoria, imagen_url: url });
   b.disabled = false;
   if (ins.error) return msg("#am", "No se pudo guardar: " + ins.error.message, "err");
 
-  $("#n").value = ""; $("#pr").value = ""; $("#ft").value = ""; S.img = null;
+  $("#n").value = ""; $("#pr").value = ""; $("#ca").value = ""; $("#ft").value = ""; S.img = null;
   $("#editor").classList.add("hide"); redibujar();
   msg("#am", "Publicado.", "ok"); listar();
 };
@@ -205,3 +214,4 @@ $("#lista").addEventListener("click", async e => {
 </script>
 </body>
 </html>
+
