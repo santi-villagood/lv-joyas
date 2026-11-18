@@ -35,7 +35,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script>
-const { SUPABASE_URL, SUPABASE_KEY, WHATSAPP, CATEGORIAS, LOGO_URL, NOMBRE } = window.CONFIG;
+const { SUPABASE_URL, SUPABASE_KEY, WHATSAPP, LOGO_URL, NOMBRE } = window.CONFIG;
 document.title = NOMBRE;
 // Limpia el service worker viejo de la raíz (la app ahora vive en /app/)
 if ("serviceWorker" in navigator) {
@@ -67,7 +67,10 @@ async function cargar() {
 }
 
 function renderCats() {
-  $("#cats").innerHTML = CATEGORIAS.map(c => `<button class="${c===cat?"on":""}" data-c="${esc(c)}">${esc(c)}</button>`).join("");
+  // Las categorías salen de los productos publicados
+  const lista = ["Todo", ...[...new Set(productos.map(p => p.categoria).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"))];
+  if (!lista.includes(cat)) cat = "Todo";
+  $("#cats").innerHTML = lista.map(c => `<button class="${c===cat?"on":""}" data-c="${esc(c)}">${esc(c)}</button>`).join("");
 }
 
 function tarjeta(p) {
@@ -80,9 +83,10 @@ function tarjeta(p) {
 function vistaInicio() {
   const t = $("#q").value.trim().toLowerCase();
   const l = productos.filter(p => (cat === "Todo" || p.categoria === cat) && p.nombre.toLowerCase().includes(t));
-  $("#view").innerHTML = l.length
-    ? `<div class="grid">${l.map(tarjeta).join("")}</div>`
-    : `<div class="empty">No hay joyas para mostrar todavía.<br>Probá con otra categoría o búsqueda.</div>`;
+  if (l.length) { $("#view").innerHTML = `<div class="grid">${l.map(tarjeta).join("")}</div>`; return; }
+  $("#view").innerHTML = t
+    ? `<div class="empty">No encontré “${esc($("#q").value.trim())}”.<br>Probá con otra palabra${cat !== "Todo" ? " o buscá en “Todo”" : ""}.</div>`
+    : `<div class="empty">Todavía no hay joyas en esta sección.</div>`;
 }
 
 function vistaCarrito() {
